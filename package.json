@@ -1,0 +1,19 @@
+{
+  "name": "specter",
+  "version": "1.0.0",
+  "description": "A game",
+  "private": true,
+  "mode": "development",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mark Nutter <marknutter@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "ecsy": "^0.2.1"
+  },
+  "devDependencies": {
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10"
+  }
+}
