@@ -5,15 +5,25 @@
   "private": true,
   "mode": "development",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack",
+    "watch": "webpack --watch",
+    "start": "webpack-dev-server --open",
+    "server": "node server.js"
   },
   "author": "Mark Nutter <marknutter@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "ecsy": "^0.2.1"
+    "ecsy": "^0.2.1",
+    "three": "^0.112.1"
   },
   "devDependencies": {
+    "clean-webpack-plugin": "^3.0.0",
+    "express": "^4.17.1",
+    "html-webpack-plugin": "^3.2.0",
     "webpack": "^4.41.5",
-    "webpack-cli": "^3.3.10"
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-middleware": "^3.7.2",
+    "webpack-dev-server": "^3.10.1"
   }
 }

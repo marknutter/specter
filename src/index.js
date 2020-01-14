@@ -1,19 +1,31 @@
 import { World, System, TagComponent } from "ecsy";
+import * as THREE from 'three';
 
-const NUM_ELEMENTS = 50;
-const SPEED_MULTIPLIER = 0.3;
+const NUM_ELEMENTS = 10;
+const SPEED_MULTIPLIER = 0.1;
 const SHAPE_SIZE = 50;
 const SHAPE_HALF_SIZE = SHAPE_SIZE / 2;
+const SCENE_RADIUS = 4;
 
 // Initialize canvas
-let canvas = document.querySelector("canvas");
-let canvasWidth = canvas.width = window.innerWidth;
-let canvasHeight = canvas.height = window.innerHeight;
-let ctx = canvas.getContext("2d");
+// let canvas = document.querySelector("canvas");
+// let canvasWidth = canvas.width = window.innerWidth;
+// let canvasHeight = canvas.height = window.innerHeight;
+// let ctx = canvas.getContext("2d");
+// const renderer = new THREE.WebGLRenderer({canvas});
+
+var scene = new THREE.Scene();
+var camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+var renderer = new THREE.WebGLRenderer();
+camera.position.z = 5;
+renderer.setSize( window.innerWidth, window.innerHeight );
+document.body.appendChild( renderer.domElement );
+
 
 //----------------------
 // Components
 //----------------------
+
 
 // Velocity component
 class Velocity {
@@ -25,19 +37,37 @@ class Velocity {
 // Position component
 class Position {
   constructor() {
-    this.x = this.y = 0;
+    this.value = new THREE.Vector3( 0, 0, 0 );
   }
 }
+
+class Shape extends TagComponent {}
 
 // Shape component
-class Shape {
+class Cube {
   constructor() {
-    this.primitive = 'box';
+    var cubeGeometry = new THREE.BoxGeometry( 1, 1, 1 );
+    var cubeMaterial = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
+    var cube = new THREE.Mesh( cubeGeometry, cubeMaterial );
+    console.log('adding cube')
+    scene.add( cube );
+    this.primative = 'cube';
+    this.mesh = cube;
   }
 }
 
-// Renderable component
-class Renderable extends TagComponent {}
+class Sphere {
+  constructor() {
+    var sphereGeometry = new THREE.SphereGeometry( 0.5, 16, 16 );
+    var sphereMaterial = new THREE.MeshBasicMaterial( {color: 0xffff00} );
+    var sphere = new THREE.Mesh( sphereGeometry, sphereMaterial );
+    console.log('adding sphere')
+    scene.add( sphere );
+    this.primative = 'sphere';
+    this.mesh = sphere;
+  }
+}
+
 
 //----------------------
 // Systems
@@ -51,14 +81,15 @@ class MovableSystem extends System {
     this.queries.moving.results.forEach(entity => {
       var velocity = entity.getComponent(Velocity);
       var position = entity.getMutableComponent(Position);
-      position.x += velocity.x * delta;
-      position.y += velocity.y * delta;
-      
-      if (position.x > canvasWidth + SHAPE_HALF_SIZE) position.x = - SHAPE_HALF_SIZE;
-      if (position.x < - SHAPE_HALF_SIZE) position.x = canvasWidth + SHAPE_HALF_SIZE;
-      if (position.y > canvasHeight + SHAPE_HALF_SIZE) position.y = - SHAPE_HALF_SIZE;
-      if (position.y < - SHAPE_HALF_SIZE) position.y = canvasHeight + SHAPE_HALF_SIZE;
+      // console.log('position', position)
+      var shape = entity.getMutableComponent(Cube) || entity.getMutableComponent(Sphere)
+      // console.log('shape', shape.position)
+      var newX = shape.mesh.position.x + velocity.x;
+      var newY = shape.mesh.position.y + velocity.y;
+      shape.mesh.position.set(Math.abs(newX) > SCENE_RADIUS ? newX * -1 : newX, Math.abs(newY) > SCENE_RADIUS ? newY * -1 : newY , 0);
+      // shape.mesh.position.set(position.value.x > 10 ? 0 : position.value.x, position.value.y > 10 ? 0 : position.value.y, position.value.z > 10 ? 0 : position.value.z);
     });
+
   }
 }
 
@@ -69,57 +100,11 @@ MovableSystem.queries = {
   }
 }
 
-// RendererSystem
-class RendererSystem extends System {
-  // This method will get called on every frame by default
-  execute(delta, time) {
-    
-    ctx.fillStyle = "#d4d4d4";
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    
-    // Iterate through all the entities on the query
-    this.queries.renderables.results.forEach(entity => {
-      var shape = entity.getComponent(Shape);
-      var position = entity.getComponent(Position);
-      if (shape.primitive === 'box') {
-        this.drawBox(position);
-      } else {
-        this.drawCircle(position);
-      }
-    });
-  }
-  
-  drawCircle(position) {
-    ctx.beginPath();
-    ctx.arc(position.x, position.y, SHAPE_HALF_SIZE, 0, 2 * Math.PI, false);
-    ctx.fillStyle= "#39c495";
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#0b845b";
-    ctx.stroke();          
-  }
-  
-  drawBox(position) {
-    ctx.beginPath();
-    ctx.rect(position.x - SHAPE_HALF_SIZE, position.y - SHAPE_HALF_SIZE, SHAPE_SIZE, SHAPE_SIZE);
-    ctx.fillStyle= "#e2736e";
-    ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = "#b74843";
-    ctx.stroke();                      
-  }
-}
-
-// Define a query of entities that have "Renderable" and "Shape" components
-RendererSystem.queries = {
-  renderables: { components: [Renderable, Shape] }
-}
 
 // Create world and register the systems on it
 var world = new World();
 world
-  .registerSystem(MovableSystem)
-  .registerSystem(RendererSystem);
+  .registerSystem(MovableSystem);
 
 // Some helper functions when creating the components
 function getRandomVelocity() {
@@ -131,24 +116,21 @@ function getRandomVelocity() {
 
 function getRandomPosition() {
   return { 
-    x: Math.random() * canvasWidth, 
-    y: Math.random() * canvasHeight
+    value: new THREE.Vector3(Math.random(), Math.random(), 0)
   };
 }
 
 function getRandomShape() {
-   return {
-     primitive: Math.random() >= 0.5 ? 'circle' : 'box'
-   };
+   return Math.random() >= 0.5 ? Cube : Sphere;
 }
 
 for (let i = 0; i < NUM_ELEMENTS; i++) {
   world
     .createEntity()
     .addComponent(Velocity, getRandomVelocity())
-    .addComponent(Shape, getRandomShape())
+    .addComponent(getRandomShape())
+    .addComponent(Shape)
     .addComponent(Position, getRandomPosition())
-    .addComponent(Renderable)        
 }
       
 // Run!
@@ -162,6 +144,8 @@ function run() {
 
   lastTime = time;
   requestAnimationFrame(run);
+  renderer.render( scene, camera );
+  
 }
 
 var lastTime = performance.now();
